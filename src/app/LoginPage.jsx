@@ -37,15 +37,20 @@ export default function LoginPage() {
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setLoading(true)
     try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({ email, password })
+      // Pass full_name and role via metadata — the handle_new_user() trigger
+      // reads these and creates the profiles row automatically
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: 'student',
+          },
+        },
+      })
       if (signUpError) { setError(signUpError.message); return }
       if (authData.user) {
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: authData.user.id,
-          full_name: fullName,
-          role: 'student',
-        })
-        if (profileError) { setError('Account created but profile setup failed: ' + profileError.message); return }
         setSuccess('Account created! Please check your email to confirm your account.')
         setEmail(''); setPassword(''); setConfirmPassword(''); setFullName('')
         setTimeout(() => { setIsSignUp(false); setSuccess(null) }, 2000)

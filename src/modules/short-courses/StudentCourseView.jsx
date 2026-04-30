@@ -190,10 +190,10 @@ export function StudentCourseView({ course, onBack }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 overflow-x-auto">
         <button onClick={onBack} className="btn-ghost text-sm">← Back to Courses</button>
         <span className="text-gray-300">|</span>
-        <span className="text-sm text-gray-600 font-medium truncate">{course.title}</span>
+        <span className="text-xs sm:text-sm text-gray-600 font-medium truncate max-w-[150px] sm:max-w-none">{course.title}</span>
         {enrolled && (
           <span className="ml-auto text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-green-100 text-green-700">✓ Enrolled</span>
         )}
@@ -202,7 +202,7 @@ export function StudentCourseView({ course, onBack }) {
         )}
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
 
         {/* ── Left: video + details ── */}
         <div className="lg:col-span-2 space-y-6">
@@ -334,7 +334,7 @@ export function StudentCourseView({ course, onBack }) {
         <div className="lg:col-span-1">
           {/* Enroll CTA card (sticky, only when not enrolled) */}
           {!checkingEnrollment && !enrolled && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4 sticky top-6 z-10">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5 mb-4 lg:sticky lg:top-6 z-10">
               <div className="text-center mb-3">
                 <span className="font-serif text-2xl font-bold text-primary">
                   {course.is_free ? 'Free' : `$${course.fee}`}
@@ -348,7 +348,7 @@ export function StudentCourseView({ course, onBack }) {
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 sticky top-6 overflow-hidden" style={!enrolled ? { top: '12rem' } : {}}>
+          <div className="bg-white rounded-xl border border-gray-200 lg:sticky lg:top-6 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 bg-primary">
               <h3 className="font-semibold text-white text-sm">Course Curriculum</h3>
               <p className="text-primary-200 text-xs mt-0.5">{totalLectures} lectures · {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m</p>

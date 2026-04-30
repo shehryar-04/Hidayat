@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useRole } from './RoleProvider'
 import { useFeatureFlags } from './FeatureFlagProvider'
 import { useProfile } from './useProfile'
+import Logo from './Logo'
 import ProfileModal from './ProfileModal'
 
 const allNavItems = [
@@ -40,7 +41,7 @@ function AvatarCircle({ avatarUrl, initials }) {
 
 export default function Layout({ children }) {
   const { role, signOut } = useRole()
-  const { flags } = useFeatureFlags()
+  const { flags, loading: flagsLoading } = useFeatureFlags()
   const { profile, avatarUrl } = useProfile()
   const navigate = useNavigate()
   const location = useLocation()
@@ -73,6 +74,7 @@ export default function Layout({ children }) {
 
   const visibleItems = allNavItems.filter(item => {
     if (!item.roles.includes(role)) return false
+    if (flagsLoading) return !item.flag   // while loading, only show non-flag items
     if (item.flag && !flags[item.flag]) return false
     return true
   })
@@ -101,10 +103,7 @@ export default function Layout({ children }) {
 
           {/* Brand */}
           <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 mr-2">
-            <span className="text-xl">☪️</span>
-            <span className="font-serif font-bold text-primary text-base leading-tight hidden sm:block">
-              Hidayat
-            </span>
+            <Logo size="sm" />
           </NavLink>
 
           {/* Desktop nav links */}

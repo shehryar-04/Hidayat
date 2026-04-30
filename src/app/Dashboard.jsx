@@ -18,9 +18,21 @@ const moduleCards = [
 
 export default function Dashboard() {
   const { role } = useRole()
-  const { flags } = useFeatureFlags()
+  const { flags, loading: flagsLoading } = useFeatureFlags()
   const { profile } = useProfile()
   const navigate = useNavigate()
+
+  // Wait for flags to load before showing modules
+  if (flagsLoading) {
+    return (
+      <div className="max-w-screen-xl mx-auto px-6 py-10">
+        <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm">Loading your dashboard…</p>
+        </div>
+      </div>
+    )
+  }
 
   const visibleCards = moduleCards.filter(card => {
     if (!card.roles.includes(role)) return false

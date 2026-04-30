@@ -35,12 +35,22 @@ function RootRoute() {
  * Darul Ifta is public — guests can browse fatwas.
  * Logged-in users get the full Layout wrapper.
  */
+import PublicTopNav from './PublicTopNav'
+
+/** Simple public navbar for guests (no auth, no profile) */
+
 function DarulIftaPublicRoute() {
   const { role, loading } = useRole()
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Loading…</div>
   if (!role) {
-    // Guest: show module without sidebar layout
-    return <DarulIftaModule />
+    return (
+      <div>
+        <PublicTopNav />
+        <div className="pt-[57px] sm:pt-[65px]">
+          <DarulIftaModule />
+        </div>
+      </div>
+    )
   }
   return (
     <Layout>

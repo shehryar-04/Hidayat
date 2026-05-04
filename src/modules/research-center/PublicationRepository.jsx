@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
 /**
- * Publication Repository Component
- * Displays published publications with search and download tracking
- * Requirements: 9.3, 9.4, 9.6
+ * Publication Repository — public-facing list of published research.
+ * Anyone (including guests) can browse and download PDFs.
  */
 export function PublicationRepository() {
   const [publications, setPublications] = useState([])
@@ -13,121 +12,64 @@ export function PublicationRepository() {
   const [searchTitle, setSearchTitle] = useState('')
   const [searchAuthor, setSearchAuthor] = useState('')
   const [publicationType, setPublicationType] = useState('')
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
 
-  useEffect(() => {
-    loadPublications()
-  }, [])
+  useEffect(() => { loadPublications() }, [])
 
   const loadPublications = async () => {
     setLoading(true)
     try {
-      let query = supabase
+      const { data, error: err } = await supabase
         .from('publications')
-        .select(
-          `
-          id,
-          title,
-          abstract,
-          authors,
-          publication_type,
-          file_path,
-          status,
-          submitted_by,
-          submitted_at,
-          download_count,
-          profiles:submitted_by (
-            id,
-            full_name
-          )
-        `
-        )
+        .select(`
+          id, title, abstract, authors, publication_type,
+          file_path, status, submitted_by, submitted_at, download_count,
+          profiles:submitted_by ( id, full_name )
+        `)
         .eq('status', 'published')
-
-      const { data, error: err } = await query.order('submitted_at', {
-        ascending: false,
-      })
+        .order('submitted_at', { ascending: false })
 
       if (err) throw err
       setPublications(data || [])
     } catch (err) {
       setError(err.message)
-      console.error('Error loading publications:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     e.preventDefault()
-    setLoading(true)
+    // Client-side filter from already-loaded data
+    loadFilteredPublications()
+  }
 
+  const loadFilteredPublications = async () => {
+    setLoading(true)
     try {
       let query = supabase
         .from('publications')
-        .select(
-          `
-          id,
-          title,
-          abstract,
-          authors,
-          publication_type,
-          file_path,
-          status,
-          submitted_by,
-          submitted_at,
-          download_count,
-          profiles:submitted_by (
-            id,
-            full_name
-          )
-        `
-        )
+        .select(`
+          id, title, abstract, authors, publication_type,
+          file_path, status, submitted_by, submitted_at, download_count,
+          profiles:submitted_by ( id, full_name )
+        `)
         .eq('status', 'published')
 
-      if (searchTitle) {
-        query = query.ilike('title', `%${searchTitle}%`)
-      }
+      if (searchTitle) query = query.ilike('title', `%${searchTitle}%`)
+      if (publicationType) query = query.eq('publication_type', publicationType)
 
-      if (publicationType) {
-        query = query.eq('publication_type', publicationType)
-      }
-
-      const { data, error: err } = await query.order('submitted_at', {
-        ascending: false,
-      })
-
+      const { data, error: err } = await query.order('submitted_at', { ascending: false })
       if (err) throw err
 
-      // Filter by author and date range in memory
       let filtered = data || []
-
       if (searchAuthor) {
-        filtered = filtered.filter((pub) =>
-          pub.authors?.some((author) =>
-            author.toLowerCase().includes(searchAuthor.toLowerCase())
-          )
+        filtered = filtered.filter(pub =>
+          pub.authors?.some(a => a.toLowerCase().includes(searchAuthor.toLowerCase()))
         )
       }
-
-      if (dateRange.start) {
-        const startDate = new Date(dateRange.start)
-        filtered = filtered.filter(
-          (pub) => new Date(pub.submitted_at) >= startDate
-        )
-      }
-
-      if (dateRange.end) {
-        const endDate = new Date(dateRange.end)
-        filtered = filtered.filter(
-          (pub) => new Date(pub.submitted_at) <= endDate
-        )
-      }
-
       setPublications(filtered)
     } catch (err) {
       setError(err.message)
-      console.error('Search error:', err)
     } finally {
       setLoading(false)
     }
@@ -135,161 +77,147 @@ export function PublicationRepository() {
 
   const handleDownload = async (publication) => {
     try {
-      // Increment download count
-      const { error: err } = await supabase
+      // Increment download count (will fail silently for anon — that's fine)
+      await supabase
         .from('publications')
         .update({ download_count: (publication.download_count || 0) + 1 })
         .eq('id', publication.id)
 
-      if (err) throw err
-
-      // Download file
       if (publication.file_path) {
-        const { data, error: downloadErr } = await supabase.storage
-          .from('publications')
-          .download(publication.file_path)
+        // Get public URL from the research-publications bucket
+        const { data } = supabase.storage
+          .from('research-publications')
+          .getPublicUrl(publication.file_path)
 
-        if (downloadErr) throw downloadErr
-
-        const url = URL.createObjectURL(data)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = publication.title
-        link.click()
-        URL.revokeObjectURL(url)
+        if (data?.publicUrl) {
+          window.open(data.publicUrl, '_blank')
+        }
       }
-
-      // Refresh publications to show updated download count
-      await loadPublications()
     } catch (err) {
-      setError(err.message)
-      console.error('Error downloading publication:', err)
+      console.error('Download error:', err)
     }
   }
 
+  const typeLabel = (t) => {
+    const map = { paper: 'Research Paper', book: 'Book', article: 'Article', thesis: 'Thesis' }
+    return map[t] || t
+  }
+
+  const typeIcon = (t) => {
+    const map = { paper: 'description', book: 'menu_book', article: 'article', thesis: 'school' }
+    return map[t] || 'description'
+  }
+
   return (
-    <div className="publication-repository">
-      <h2>Publication Repository</h2>
+    <div>
+      {error && <div className="alert-error mb-4">{error}</div>}
 
-      {error && <div className="error-message">{error}</div>}
-
-      <form onSubmit={handleSearch} className="search-form">
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="search-title">Title</label>
+      {/* Search / Filter bar */}
+      <form onSubmit={handleSearch} className="card mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="form-label">Title</label>
             <input
-              id="search-title"
               type="text"
-              placeholder="Search by title..."
+              className="form-input"
+              placeholder="Search by title…"
               value={searchTitle}
-              onChange={(e) => setSearchTitle(e.target.value)}
+              onChange={e => setSearchTitle(e.target.value)}
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="search-author">Author</label>
+          <div>
+            <label className="form-label">Author</label>
             <input
-              id="search-author"
               type="text"
-              placeholder="Search by author..."
+              className="form-input"
+              placeholder="Search by author…"
               value={searchAuthor}
-              onChange={(e) => setSearchAuthor(e.target.value)}
+              onChange={e => setSearchAuthor(e.target.value)}
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="publication-type">Type</label>
+          <div>
+            <label className="form-label">Type</label>
             <select
-              id="publication-type"
+              className="form-input"
               value={publicationType}
-              onChange={(e) => setPublicationType(e.target.value)}
+              onChange={e => setPublicationType(e.target.value)}
             >
               <option value="">All Types</option>
               <option value="paper">Research Paper</option>
               <option value="book">Book</option>
               <option value="article">Article</option>
+              <option value="thesis">Thesis</option>
             </select>
           </div>
         </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="date-start">From Date</label>
-            <input
-              id="date-start"
-              type="date"
-              value={dateRange.start}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, start: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="date-end">To Date</label>
-            <input
-              id="date-end"
-              type="date"
-              value={dateRange.end}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, end: e.target.value })
-              }
-            />
-          </div>
+        <div className="mt-4 flex gap-3">
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Searching…' : 'Search'}
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => { setSearchTitle(''); setSearchAuthor(''); setPublicationType(''); loadPublications() }}
+          >
+            Clear
+          </button>
         </div>
-
-        <button type="submit" disabled={loading}>
-          {loading ? 'Searching...' : 'Search'}
-        </button>
       </form>
 
+      {/* Publications grid */}
       {loading ? (
-        <div className="loading">Loading publications...</div>
+        <div className="loading">Loading publications…</div>
+      ) : publications.length === 0 ? (
+        <div className="text-center py-16">
+          <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">library_books</span>
+          <p className="text-gray-500">No publications found</p>
+        </div>
       ) : (
-        <div className="publications-list">
-          {publications.length === 0 ? (
-            <p>No publications found</p>
-          ) : (
-            publications.map((pub) => (
-              <div key={pub.id} className="publication-card">
-                <div className="publication-header">
-                  <h3>{pub.title}</h3>
-                  <span className="publication-type">{pub.publication_type}</span>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {publications.map(pub => (
+            <div key={pub.id} className="bg-white rounded-xl border border-outline shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+              {/* Top accent bar */}
+              <div className="h-1 bg-secondary" />
 
+              {/* Icon header */}
+              <div className="h-32 bg-surface-container flex items-center justify-center">
+                <span className="material-symbols-outlined text-5xl text-primary opacity-30">
+                  {typeIcon(pub.publication_type)}
+                </span>
+              </div>
+
+              {/* Content */}
+              <div className="p-5 flex-1 flex flex-col">
+                <span className="badge-green text-xs mb-2 self-start">{typeLabel(pub.publication_type)}</span>
+                <h3 className="font-serif font-semibold text-primary text-lg mb-2 line-clamp-2">{pub.title}</h3>
                 {pub.abstract && (
-                  <p className="publication-abstract">{pub.abstract}</p>
+                  <p className="text-sm text-gray-500 mb-3 line-clamp-3">{pub.abstract}</p>
                 )}
-
-                <div className="publication-meta">
-                  <div className="meta-item">
-                    <strong>Authors:</strong>{' '}
-                    {pub.authors?.join(', ') || 'Unknown'}
-                  </div>
-                  <div className="meta-item">
-                    <strong>Submitted by:</strong>{' '}
-                    {pub.profiles?.full_name || 'Unknown'}
-                  </div>
-                  <div className="meta-item">
-                    <strong>Date:</strong>{' '}
-                    {new Date(pub.submitted_at).toLocaleDateString()}
-                  </div>
-                  <div className="meta-item">
-                    <strong>Downloads:</strong> {pub.download_count || 0}
-                  </div>
+                <div className="mt-auto space-y-1 text-xs text-gray-500">
+                  <p><span className="font-medium text-gray-600">Authors:</span> {pub.authors?.join(', ') || 'Unknown'}</p>
+                  <p><span className="font-medium text-gray-600">Submitted by:</span> {pub.profiles?.full_name || 'Unknown'}</p>
+                  <p><span className="font-medium text-gray-600">Date:</span> {new Date(pub.submitted_at).toLocaleDateString()}</p>
                 </div>
+              </div>
 
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-outline flex items-center justify-between">
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">download</span>
+                  {pub.download_count || 0} downloads
+                </span>
                 {pub.file_path && (
                   <button
                     onClick={() => handleDownload(pub)}
-                    className="download-button"
+                    className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
                   >
-                    Download
+                    <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+                    Download PDF
                   </button>
                 )}
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </div>
       )}
     </div>

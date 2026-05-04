@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 /**
- * Publication Submission Form Component
- * Allows scholars to submit academic publications with file attachments
- * Requirements: 9.1, 9.5
+ * Publication Submission Form — admin/scholar only.
+ * Uploads PDF to `research-publications` bucket and creates a DB row.
  */
 export function PublicationSubmissionForm({ onComplete }) {
   const [formData, setFormData] = useState({
@@ -19,37 +18,25 @@ export function PublicationSubmissionForm({ onComplete }) {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
 
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
-    setFormData((prev) => ({
-      ...prev,
-      file,
-    }))
+    setFormData(prev => ({ ...prev, file }))
   }
 
   const addAuthor = () => {
     if (newAuthor.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        authors: [...prev.authors, newAuthor.trim()],
-      }))
+      setFormData(prev => ({ ...prev, authors: [...prev.authors, newAuthor.trim()] }))
       setNewAuthor('')
     }
   }
 
-  const removeAuthor = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      authors: prev.authors.filter((_, i) => i !== index),
-    }))
+  const removeAuthor = (idx) => {
+    setFormData(prev => ({ ...prev, authors: prev.authors.filter((_, i) => i !== idx) }))
   }
 
   const handleSubmit = async (e) => {
@@ -60,14 +47,14 @@ export function PublicationSubmissionForm({ onComplete }) {
     setError(null)
 
     try {
-      const { data: user } = await supabase.auth.getUser()
+      const { data: userData } = await supabase.auth.getUser()
       let filePath = null
 
-      // Upload file if provided
+      // Upload PDF to research-publications bucket
       if (formData.file) {
         const fileName = `${Date.now()}_${formData.file.name}`
         const { error: uploadErr } = await supabase.storage
-          .from('publications')
+          .from('research-publications')
           .upload(`submissions/${fileName}`, formData.file)
 
         if (uploadErr) throw uploadErr
@@ -75,7 +62,7 @@ export function PublicationSubmissionForm({ onComplete }) {
       }
 
       // Insert publication record
-      const { error: err } = await supabase
+      const { error: insertErr } = await supabase
         .from('publications')
         .insert({
           title: formData.title,
@@ -84,134 +71,151 @@ export function PublicationSubmissionForm({ onComplete }) {
           publication_type: formData.publication_type,
           file_path: filePath,
           status: 'under_review',
-          submitted_by: user.user.id,
+          submitted_by: userData.user.id,
           submitted_at: new Date().toISOString(),
         })
 
-      if (err) throw err
+      if (insertErr) throw insertErr
 
       setSuccess(true)
-      setTimeout(() => {
-        onComplete()
-      }, 1500)
+      setTimeout(() => onComplete(), 1500)
     } catch (err) {
       setError(err.message)
-      console.error('Error submitting publication:', err)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="publication-submission-form">
-      <h2>Submit Academic Publication</h2>
+    <div className="max-w-2xl mx-auto">
+      <div className="card">
+        <h2 className="text-headline-md font-serif text-primary mb-1">Submit Publication</h2>
+        <p className="text-sm text-gray-500 mb-6">Upload a research paper, book, or article for review</p>
 
-      {error && <div className="error-message">{error}</div>}
-      {success && (
-        <div className="success-message">
-          Publication submitted successfully! It will be reviewed by the admin.
-        </div>
-      )}
-
-      {!success && (
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-group">
-            <label htmlFor="title">Publication Title *</label>
-            <input
-              id="title"
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              required
-              placeholder="Enter publication title"
-            />
+        {error && <div className="alert-error mb-4">{error}</div>}
+        {success && (
+          <div className="alert-success mb-4">
+            Publication submitted successfully! It will be reviewed before publishing.
           </div>
+        )}
 
-          <div className="form-group">
-            <label htmlFor="abstract">Abstract</label>
-            <textarea
-              id="abstract"
-              name="abstract"
-              value={formData.abstract}
-              onChange={handleInputChange}
-              placeholder="Enter publication abstract"
-              rows="4"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="publication_type">Publication Type *</label>
-            <select
-              id="publication_type"
-              name="publication_type"
-              value={formData.publication_type}
-              onChange={handleInputChange}
-            >
-              <option value="paper">Research Paper</option>
-              <option value="book">Book</option>
-              <option value="article">Article</option>
-            </select>
-          </div>
-
-          <div className="form-section">
-            <h3>Authors</h3>
-            <div className="list-input">
+        {!success && (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
+            <div className="form-group">
+              <label className="form-label">Publication Title *</label>
               <input
                 type="text"
-                value={newAuthor}
-                onChange={(e) => setNewAuthor(e.target.value)}
-                placeholder="Add author name"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addAuthor()
-                  }
-                }}
+                name="title"
+                className="form-input"
+                value={formData.title}
+                onChange={handleChange}
+                required
+                placeholder="Enter publication title"
               />
-              <button type="button" onClick={addAuthor}>
-                Add
-              </button>
             </div>
 
-            {formData.authors.length > 0 && (
-              <div className="list-items">
-                {formData.authors.map((author, idx) => (
-                  <div key={idx} className="list-item">
-                    <span>{author}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeAuthor(idx)}
-                      className="remove-button"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+            {/* Abstract */}
+            <div className="form-group">
+              <label className="form-label">Abstract</label>
+              <textarea
+                name="abstract"
+                className="form-input min-h-[100px]"
+                value={formData.abstract}
+                onChange={handleChange}
+                placeholder="Enter publication abstract"
+                rows="4"
+              />
+            </div>
+
+            {/* Type */}
+            <div className="form-group">
+              <label className="form-label">Publication Type *</label>
+              <select
+                name="publication_type"
+                className="form-input"
+                value={formData.publication_type}
+                onChange={handleChange}
+              >
+                <option value="paper">Research Paper</option>
+                <option value="book">Book</option>
+                <option value="article">Article</option>
+                <option value="thesis">Thesis</option>
+              </select>
+            </div>
+
+            {/* Authors */}
+            <div className="form-group">
+              <label className="form-label">Authors</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="form-input flex-1"
+                  value={newAuthor}
+                  onChange={e => setNewAuthor(e.target.value)}
+                  placeholder="Add author name"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAuthor() } }}
+                />
+                <button type="button" onClick={addAuthor} className="btn-outline whitespace-nowrap">
+                  Add
+                </button>
               </div>
-            )}
-          </div>
+              {formData.authors.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.authors.map((author, idx) => (
+                    <span key={idx} className="badge-green flex items-center gap-1 pr-1">
+                      {author}
+                      <button
+                        type="button"
+                        onClick={() => removeAuthor(idx)}
+                        className="ml-1 text-primary hover:text-tertiary transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="file">Publication File (PDF, DOC, etc.)</label>
-            <input
-              id="file"
-              type="file"
-              onChange={handleFileChange}
-              accept=".pdf,.doc,.docx,.txt"
-            />
-            {formData.file && (
-              <p className="file-info">Selected: {formData.file.name}</p>
-            )}
-          </div>
+            {/* File upload */}
+            <div className="form-group">
+              <label className="form-label">Publication File (PDF) *</label>
+              <div className="border-2 border-dashed border-outline rounded-lg p-6 text-center hover:border-primary transition-colors">
+                <span className="material-symbols-outlined text-3xl text-gray-400 mb-2 block">cloud_upload</span>
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf"
+                  className="hidden"
+                  id="pub-file-input"
+                />
+                <label htmlFor="pub-file-input" className="cursor-pointer">
+                  <span className="text-primary font-medium hover:underline">Click to upload</span>
+                  <span className="text-gray-500 text-sm"> or drag and drop</span>
+                </label>
+                <p className="text-xs text-gray-400 mt-1">PDF files only</p>
+                {formData.file && (
+                  <p className="text-sm text-primary mt-2 font-medium">
+                    ✓ {formData.file.name}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          <div className="form-actions">
-            <button type="submit" disabled={loading || !formData.title.trim()}>
-              {loading ? 'Submitting...' : 'Submit Publication'}
-            </button>
-          </div>
-        </form>
-      )}
+            {/* Submit */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                className="btn-primary flex-1"
+                disabled={loading || !formData.title.trim()}
+              >
+                {loading ? 'Submitting…' : 'Submit for Review'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   )
 }

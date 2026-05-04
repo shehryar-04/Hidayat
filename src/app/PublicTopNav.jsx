@@ -25,7 +25,7 @@ export default function PublicTopNav() {
     { label: 'Hifz & Nazrah', href: '/#programs' },
     { label: 'Short Courses', href: '#', onClick: handleCurriculumClick },
     { label: 'Darul Ifta', href: '/darul-ifta' },
-    { label: 'Research Center', href: '#' },
+    { label: 'Research Center', href: '/research-center' },
   ]
 
   const isActive = (href) => {

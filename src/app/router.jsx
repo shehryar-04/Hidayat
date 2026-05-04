@@ -61,6 +61,29 @@ function DarulIftaPublicRoute() {
   )
 }
 
+/** Research Center is public — guests can browse publications. */
+function ResearchCenterPublicRoute() {
+  const { role, loading } = useRole()
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Loading…</div>
+  if (!role) {
+    return (
+      <div>
+        <PublicTopNav />
+        <div className="pt-[57px] sm:pt-[65px]">
+          <ResearchCenterModule />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <Layout>
+      <FeatureFlagGuard flagKey="research_center">
+        <ResearchCenterModule />
+      </FeatureFlagGuard>
+    </Layout>
+  )
+}
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -75,7 +98,8 @@ export default function AppRouter() {
       <Route path="/short-courses/*" element={<ProtectedRoute><Layout><FeatureFlagGuard flagKey="short_courses"><ShortCoursesModule /></FeatureFlagGuard></Layout></ProtectedRoute>} />
       {/* Darul Ifta — public route, no ProtectedRoute */}
       <Route path="/darul-ifta/*" element={<DarulIftaPublicRoute />} />
-      <Route path="/research-center/*" element={<ProtectedRoute><Layout><FeatureFlagGuard flagKey="research_center"><ResearchCenterModule /></FeatureFlagGuard></Layout></ProtectedRoute>} />
+      {/* Research Center — public route, no ProtectedRoute */}
+      <Route path="/research-center/*" element={<ResearchCenterPublicRoute />} />
       <Route path="/wazifa/*" element={<ProtectedRoute><Layout><FeatureFlagGuard flagKey="wazifa"><WazifaModule /></FeatureFlagGuard></Layout></ProtectedRoute>} />
       <Route path="/reports/*" element={<ProtectedRoute><Layout><FeatureFlagGuard flagKey="student_reports"><StudentReportsModule /></FeatureFlagGuard></Layout></ProtectedRoute>} />
       <Route path="/student-admin/*" element={<ProtectedRoute><Layout><StudentAdminModule /></Layout></ProtectedRoute>} />

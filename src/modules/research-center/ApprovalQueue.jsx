@@ -2,58 +2,26 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
 /**
- * Approval Queue Component
- * Allows admin to approve or reject publications
- * Requirements: 9.2, 9.3
+ * Approval Queue — admin only.
+ * Shows publications pending review with approve/reject actions.
  */
 export function ApprovalQueue() {
   const [publications, setPublications] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [userRole, setUserRole] = useState(null)
 
-  useEffect(() => {
-    loadUserRole()
-    loadPendingPublications()
-  }, [])
+  useEffect(() => { loadPending() }, [])
 
-  const loadUserRole = async () => {
-    try {
-      const { data: user } = await supabase.auth.getUser()
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.user.id)
-        .single()
-
-      setUserRole(profile?.role)
-    } catch (err) {
-      console.error('Error loading user role:', err)
-    }
-  }
-
-  const loadPendingPublications = async () => {
+  const loadPending = async () => {
     setLoading(true)
     try {
       const { data, error: err } = await supabase
         .from('publications')
-        .select(
-          `
-          id,
-          title,
-          abstract,
-          authors,
-          publication_type,
-          file_path,
-          status,
-          submitted_by,
-          submitted_at,
-          profiles:submitted_by (
-            id,
-            full_name
-          )
-        `
-        )
+        .select(`
+          id, title, abstract, authors, publication_type,
+          file_path, status, submitted_by, submitted_at,
+          profiles:submitted_by ( id, full_name )
+        `)
         .eq('status', 'under_review')
         .order('submitted_at')
 
@@ -61,98 +29,96 @@ export function ApprovalQueue() {
       setPublications(data || [])
     } catch (err) {
       setError(err.message)
-      console.error('Error loading publications:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleApprove = async (publicationId) => {
+  const handleAction = async (id, newStatus) => {
     try {
       const { error: err } = await supabase
         .from('publications')
-        .update({ status: 'published' })
-        .eq('id', publicationId)
+        .update({ status: newStatus })
+        .eq('id', id)
 
       if (err) throw err
-      await loadPendingPublications()
+      await loadPending()
     } catch (err) {
       setError(err.message)
-      console.error('Error approving publication:', err)
     }
   }
 
-  const handleReject = async (publicationId) => {
-    try {
-      const { error: err } = await supabase
-        .from('publications')
-        .update({ status: 'rejected' })
-        .eq('id', publicationId)
+  const handlePreview = (publication) => {
+    if (publication.file_path) {
+      const { data } = supabase.storage
+        .from('research-publications')
+        .getPublicUrl(publication.file_path)
 
-      if (err) throw err
-      await loadPendingPublications()
-    } catch (err) {
-      setError(err.message)
-      console.error('Error rejecting publication:', err)
+      if (data?.publicUrl) window.open(data.publicUrl, '_blank')
     }
   }
 
-  if (userRole !== 'admin') {
-    return (
-      <div className="approval-queue">
-        <p>You do not have permission to access this section.</p>
-      </div>
-    )
+  const typeLabel = (t) => {
+    const map = { paper: 'Research Paper', book: 'Book', article: 'Article', thesis: 'Thesis' }
+    return map[t] || t
   }
 
-  if (loading) {
-    return <div className="loading">Loading publications...</div>
-  }
+  if (loading) return <div className="loading">Loading approval queue…</div>
 
   return (
-    <div className="approval-queue">
-      <h2>Publication Approval Queue</h2>
-
-      {error && <div className="error-message">{error}</div>}
+    <div>
+      {error && <div className="alert-error mb-4">{error}</div>}
 
       {publications.length === 0 ? (
-        <p>No publications pending approval</p>
+        <div className="text-center py-16">
+          <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">task_alt</span>
+          <p className="text-gray-500 font-medium">No publications pending approval</p>
+          <p className="text-gray-400 text-sm mt-1">All caught up!</p>
+        </div>
       ) : (
-        <div className="publications-queue">
-          {publications.map((pub) => (
-            <div key={pub.id} className="publication-item">
-              <div className="publication-info">
-                <h3>{pub.title}</h3>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 mb-2">{publications.length} publication(s) awaiting review</p>
+
+          {publications.map(pub => (
+            <div key={pub.id} className="card flex flex-col sm:flex-row gap-4">
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-2 mb-2">
+                  <h3 className="font-serif font-semibold text-primary text-lg truncate">{pub.title}</h3>
+                  <span className="badge-yellow whitespace-nowrap text-xs">{typeLabel(pub.publication_type)}</span>
+                </div>
+
                 {pub.abstract && (
-                  <p className="abstract">{pub.abstract}</p>
+                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{pub.abstract}</p>
                 )}
-                <div className="meta">
-                  <small>
-                    <strong>Authors:</strong> {pub.authors?.join(', ')}
-                  </small>
-                  <small>
-                    <strong>Type:</strong> {pub.publication_type}
-                  </small>
-                  <small>
-                    <strong>Submitted by:</strong> {pub.profiles?.full_name}
-                  </small>
-                  <small>
-                    <strong>Date:</strong>{' '}
-                    {new Date(pub.submitted_at).toLocaleDateString()}
-                  </small>
+
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  <span><span className="font-medium text-gray-600">Authors:</span> {pub.authors?.join(', ') || '—'}</span>
+                  <span><span className="font-medium text-gray-600">Submitted by:</span> {pub.profiles?.full_name || '—'}</span>
+                  <span><span className="font-medium text-gray-600">Date:</span> {new Date(pub.submitted_at).toLocaleDateString()}</span>
                 </div>
               </div>
 
-              <div className="publication-actions">
+              {/* Actions */}
+              <div className="flex sm:flex-col gap-2 sm:items-end justify-end shrink-0">
+                {pub.file_path && (
+                  <button
+                    onClick={() => handlePreview(pub)}
+                    className="btn-ghost text-xs flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">visibility</span>
+                    Preview
+                  </button>
+                )}
                 <button
-                  onClick={() => handleApprove(pub.id)}
-                  className="approve-button"
+                  onClick={() => handleAction(pub.id, 'published')}
+                  className="btn-primary text-xs px-4"
                 >
                   Approve
                 </button>
                 <button
-                  onClick={() => handleReject(pub.id)}
-                  className="reject-button"
+                  onClick={() => handleAction(pub.id, 'rejected')}
+                  className="btn-danger text-xs px-4"
                 >
                   Reject
                 </button>

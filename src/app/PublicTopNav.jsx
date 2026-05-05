@@ -57,8 +57,8 @@ export default function PublicTopNav() {
   // Same links for everyone — protected ones redirect guests to /login
   const navLinks = [
     { label: 'Home',           href: '/',                protected: false },
-    { label: 'Darse Nizami',   href: '/dars-e-nizami',   protected: true },
-    { label: 'Hifz & Nazrah',  href: '/hifz',            protected: true },
+    { label: 'Darse Nizami',   href: '/dars-e-nizami',   protected: false },
+    { label: 'Hifz & Nazrah',  href: '/hifz',            protected: false },
     { label: 'Short Courses',  href: '/short-courses',   protected: true },
     { label: 'Darul Ifta',     href: '/darul-ifta',      protected: false },
     { label: 'Research Center', href: '/research-center', protected: false },

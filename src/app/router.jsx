@@ -39,10 +39,12 @@ export default function AppRouter() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Protected module routes — all use the same AppShell (PublicTopNav) */}
-      <Route path="/dars-e-nizami/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="dars_e_nizami"><DarsENizamiModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />
-      <Route path="/hifz/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="hifz"><HifzModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />
-      <Route path="/nazra/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="nazra"><NazraModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />
+      {/* Under construction modules — no auth required, no flag guard */}
+      <Route path="/dars-e-nizami/*" element={<AppShell><DarsENizamiModule /></AppShell>} />
+      <Route path="/hifz/*" element={<AppShell><HifzModule /></AppShell>} />
+      <Route path="/nazra/*" element={<AppShell><NazraModule /></AppShell>} />
+
+      {/* Protected module routes */}
       <Route path="/short-courses/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="short_courses"><ShortCoursesModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />
       <Route path="/wazifa/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="wazifa"><WazifaModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />
       <Route path="/reports/*" element={<ProtectedRoute><AppShell><FeatureFlagGuard flagKey="student_reports"><StudentReportsModule /></FeatureFlagGuard></AppShell></ProtectedRoute>} />

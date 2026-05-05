@@ -126,6 +126,7 @@ function DoorOverlay({ scrollProgress }) {
 // ─── Hero ────────────────────────────────────────────────────
 function Hero() {
   const navigate = useNavigate()
+  const { role } = useRole()
   return (
     <section className="relative min-h-[50vh] lg:min-h-[600px] flex items-center overflow-hidden bg-white pt-2 sm:pt-4">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -144,7 +145,7 @@ function Hero() {
             A modern sanctuary for traditional Islamic sciences. Bridging authentic heritage with contemporary intellectual rigor for seekers of truth worldwide.
           </p>
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2 sm:pt-4 justify-center lg:justify-start">
-            <button onClick={() => navigate('/login')}
+            <button onClick={() => navigate(role ? '/short-courses' : '/login')}
               className="bg-primary text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-label-lg flex items-center justify-center space-x-3 shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all">
               <span>Explore Courses</span>
               <Icon name="arrow_forward" />

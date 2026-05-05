@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRole } from './RoleProvider'
 import PublicTopNav from './PublicTopNav'
@@ -8,75 +8,118 @@ function Icon({ name, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{name}</span>
 }
 
-// ─── TopNav with mobile hamburger ────────────────────────────
-function TopNav() {
-  const navigate = useNavigate()
-  const { role } = useRole()
-  const [mobileOpen, setMobileOpen] = useState(false)
+// ─── Door Opening Overlay ────────────────────────────────────
+// This sits ON TOP of the entire page. As user scrolls, doors open
+// and the overlay fades away revealing the website beneath.
+function DoorOverlay({ scrollProgress }) {
+  // Image transitions:
+  // 0.0 - 0.25: closed door
+  // 0.25 - 0.45: crossfade closed → semi-open
+  // 0.45 - 0.6: semi-open
+  // 0.6 - 0.78: crossfade semi-open → open
+  // 0.78 - 0.88: open door visible
+  // 0.88 - 1.0: entire overlay fades out
 
-  const handleCurriculumClick = (e) => {
-    e.preventDefault()
-    navigate(role ? '/short-courses' : '/login')
-    setMobileOpen(false)
+  const getClosedOpacity = () => {
+    if (scrollProgress <= 0.25) return 1
+    if (scrollProgress <= 0.45) return 1 - (scrollProgress - 0.25) / 0.2
+    return 0
   }
 
-  const links = [
-    { label: 'Home', href: '#', active: true },
-    { label: 'Darse Nizami', href: '#programs' },
-    { label: 'Hifz & Nazrah', href: '#programs' },
-    { label: 'Short Courses', href: '#', onClick: handleCurriculumClick },
-    { label: 'Darul Ifta', href: '/darul-ifta' },
-    { label: 'Research Center', href: '#' },
-  ]
+  const getSemiOpenOpacity = () => {
+    if (scrollProgress <= 0.25) return 0
+    if (scrollProgress <= 0.45) return (scrollProgress - 0.25) / 0.2
+    if (scrollProgress <= 0.6) return 1
+    if (scrollProgress <= 0.78) return 1 - (scrollProgress - 0.6) / 0.18
+    return 0
+  }
+
+  const getOpenOpacity = () => {
+    if (scrollProgress <= 0.6) return 0
+    if (scrollProgress <= 0.78) return (scrollProgress - 0.6) / 0.18
+    return 1
+  }
+
+  // The entire overlay fades out at the end
+  const getOverlayOpacity = () => {
+    if (scrollProgress <= 0.82) return 1
+    if (scrollProgress >= 1) return 0
+    return 1 - (scrollProgress - 0.82) / 0.18
+  }
+
+  // Scale up the open door slightly for a "zoom through" feel
+  const getScale = () => {
+    if (scrollProgress <= 0.78) return 1
+    return 1 + (scrollProgress - 0.78) * 1.5
+  }
+
+  // Golden glow behind doors
+  const getGlowOpacity = () => {
+    if (scrollProgress <= 0.25) return 0
+    if (scrollProgress <= 0.6) return (scrollProgress - 0.25) * 2
+    return 0.7
+  }
+
+  // Don't render at all once fully faded
+  if (scrollProgress >= 1) return null
 
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-outline bg-background/95 backdrop-blur-md">
-      <div className="flex justify-between items-center w-full px-4 sm:px-8 py-3 sm:py-4 max-w-7xl mx-auto">
-        <div className="text-xl sm:text-2xl font-serif font-bold text-primary">HIDAYAT</div>
-
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-          {links.map(({ label, href, active, onClick }) => (
-            <a key={label} href={href} onClick={(e) => { onClick?.(e); setMobileOpen(false) }}
-              className={`font-serif font-medium text-sm cursor-pointer transition-colors whitespace-nowrap ${
-                active ? 'text-primary border-b-2 border-primary pb-1 font-bold' : 'text-slate-600 hover:text-primary'
-              }`}>
-              {label}
-            </a>
-          ))}
+    <div
+      className="fixed inset-0 z-[60] pointer-events-none"
+      style={{ opacity: getOverlayOpacity() }}
+    >
+      {/* Dark background */}
+      <div className="absolute inset-0 bg-[#080808]">
+        {/* Golden glow behind doors */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ opacity: getGlowOpacity() }}
+        >
+          <div className="w-[500px] h-[700px] rounded-full bg-gradient-radial from-amber-200/40 via-amber-100/15 to-transparent blur-3xl" />
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/login')}
-            className="bg-primary text-white px-4 sm:px-6 py-2 rounded-lg font-serif font-medium text-sm hover:opacity-90 transition-all active:scale-95">
-            Login
-          </button>
-          {/* Hamburger */}
-          <button onClick={() => setMobileOpen(o => !o)} className="lg:hidden p-2 rounded-lg hover:bg-surface-high transition-colors" aria-label="Menu">
-            <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {mobileOpen
-                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-            </svg>
-          </button>
-        </div>
+        {/* Closed door */}
+        <img
+          src="/assets/closed.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ opacity: getClosedOpacity() }}
+          draggable={false}
+        />
+
+        {/* Semi-open door */}
+        <img
+          src="/assets/semi-open.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ opacity: getSemiOpenOpacity() }}
+          draggable={false}
+        />
+
+        {/* Fully open door */}
+        <img
+          src="/assets/open.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{
+            opacity: getOpenOpacity(),
+            transform: `scale(${getScale()})`,
+          }}
+          draggable={false}
+        />
       </div>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="lg:hidden border-t border-outline bg-background px-4 py-3 space-y-1">
-          {links.map(({ label, href, active, onClick }) => (
-            <a key={label} href={href}
-              onClick={(e) => { onClick?.(e); setMobileOpen(false) }}
-              className={`block px-3 py-2.5 rounded-lg text-sm font-serif font-medium transition-colors ${
-                active ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-surface-high hover:text-primary'
-              }`}>
-              {label}
-            </a>
-          ))}
-        </div>
-      )}
-    </nav>
+      {/* Scroll indicator */}
+      <div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60"
+        style={{ opacity: scrollProgress < 0.08 ? 1 - scrollProgress * 12 : 0 }}
+      >
+        <span className="text-sm font-serif tracking-wider">Scroll to Enter</span>
+        <svg className="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </div>
+    </div>
   )
 }
 
@@ -84,7 +127,7 @@ function TopNav() {
 function Hero() {
   const navigate = useNavigate()
   return (
-    <section className="relative min-h-[60vh] lg:min-h-[820px] flex items-center overflow-hidden bg-white pt-20">
+    <section className="relative min-h-[50vh] lg:min-h-[600px] flex items-center overflow-hidden bg-white pt-2 sm:pt-4">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-secondary/30 via-transparent to-transparent" />
       </div>
@@ -116,7 +159,14 @@ function Hero() {
         {/* Right decorative card — hidden on mobile */}
         <div className="hidden lg:block lg:col-span-6 relative">
           <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-outline bg-primary aspect-[4/3]">
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-primary/20" />
+            {/* Background image placeholder — replace src with your actual image */}
+            <img
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVyIumR3cEwDm2nAkUwl9GiaqyYdFPZXH5ngcwRNI3P6DwEPdNH8dVXFIc1atFf9dKXuEDggXaSAU5fPhDMJcA7Amr4_QoAD6GD5ye3R8Y3_KM9Ec2T_kG-niClN5__EKORM8wMF15m9R_7ZviZPVLMonZOzHeMD1Jls1QqxTE2DKm519SRQxcEX7iJpuGVIpoZkifTUESDQYPTh5UxJThKoMjiQu9yCl5Nowa9kUYqaugENuMeFvgGeuj628lf9kh37ddmuOLIng"
+              alt="Islamic scholarship"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/70 to-primary/10" />
             <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
@@ -192,7 +242,6 @@ function Courses() {
           <h2 className="font-serif text-2xl sm:text-headline-lg text-primary mt-2">Discover Our Curriculum</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
-          {/* Large featured card */}
           <div className="sm:col-span-2 lg:col-span-7 group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-primary shadow-2xl h-[280px] sm:h-[400px]">
             <div className="absolute inset-0 pattern-overlay opacity-30" />
             <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-transparent" />
@@ -206,7 +255,6 @@ function Courses() {
               </button>
             </div>
           </div>
-          {/* Hifz card */}
           <div className="lg:col-span-5 bg-background rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-outline flex flex-col h-auto sm:h-[400px]">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 sm:mb-6">
               <Icon name="auto_stories" className="text-secondary text-2xl sm:text-3xl" />
@@ -218,7 +266,6 @@ function Courses() {
               <a href="#" className="text-secondary font-label-lg underline underline-offset-4">Enroll Now</a>
             </div>
           </div>
-          {/* Small cards */}
           {[
             { icon: 'history_edu', title: 'Arabic Language', desc: 'Master classical Arabic grammar and morphology.', badge: '3 Months' },
             { icon: 'balance', title: 'Islamic Finance', desc: 'Modern financial transactions according to Shari\'ah.', badge: 'Weekend' },
@@ -251,7 +298,6 @@ function FatwaSection() {
     <section className="py-16 sm:py-24 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-start">
-          {/* Left sidebar — stacks on mobile */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-28 space-y-4 sm:space-y-6 text-center lg:text-left">
               <span className="text-label-sm text-secondary tracking-widest uppercase font-bold">Darul Ifta Guidance</span>
@@ -265,7 +311,6 @@ function FatwaSection() {
               </button>
             </div>
           </div>
-          {/* Right fatwa cards */}
           <div className="lg:col-span-8 space-y-4 sm:space-y-6">
             {fatwas.map(({ cat, date, title, desc }) => (
               <div key={title} onClick={() => navigate('/darul-ifta')}
@@ -361,10 +406,89 @@ function Footer() {
 
 // ─── Page Assembly ───────────────────────────────────────────
 export default function HomePage() {
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [animationDone, setAnimationDone] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const scrollSectionRef = useRef(null)
+
+  // Detect mobile — skip animation entirely on small screens
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  useEffect(() => {
+    if (isMobile || animationDone) return // Skip on mobile
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (scrollSectionRef.current) {
+            const sectionHeight = scrollSectionRef.current.offsetHeight
+            const viewportHeight = window.innerHeight
+            const scrolled = window.scrollY
+            const totalScrollable = sectionHeight - viewportHeight
+            const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1)
+            setScrollProgress(progress)
+            if (progress >= 1) {
+              setAnimationDone(true)
+            }
+          }
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isMobile, animationDone])
+
+  // Navbar opacity — hidden during animation, fades in at the end
+  const showAnimation = !isMobile && !animationDone
+  const navbarOpacity = showAnimation
+    ? (scrollProgress >= 0.85 ? Math.min((scrollProgress - 0.85) / 0.15, 1) : 0)
+    : 1
+
+  // Once animation is done, scroll to top and show normal page
+  useEffect(() => {
+    if (animationDone) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [animationDone])
+
   return (
     <div className="font-sans scroll-smooth bg-background text-slate-800 selection:bg-secondary selection:text-white">
-      <PublicTopNav />
-      <Hero />
+      {/* Door animation phase — desktop only */}
+      {showAnimation && (
+        <>
+          <div ref={scrollSectionRef} style={{ height: '300vh' }}>
+            <div className="sticky top-0">
+              <div style={{ opacity: navbarOpacity }}>
+                <PublicTopNav />
+              </div>
+              <div className="pt-[57px] sm:pt-[65px]">
+                <Hero />
+              </div>
+            </div>
+          </div>
+          <DoorOverlay scrollProgress={scrollProgress} />
+        </>
+      )}
+
+      {/* Normal page — shown on mobile always, or after animation on desktop */}
+      {!showAnimation && (
+        <>
+          <PublicTopNav />
+          <div className="pt-[57px] sm:pt-[65px]">
+            <Hero />
+          </div>
+        </>
+      )}
+
       <Vision />
       <Courses />
       <FatwaSection />

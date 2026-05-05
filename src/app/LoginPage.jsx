@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) setError(signInError.message)
-      else navigate('/')
+      else navigate('/short-courses')
     } catch (err) {
       setError(err.message)
     } finally {

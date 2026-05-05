@@ -80,7 +80,7 @@ function DoorOverlay({ scrollProgress }) {
 
         {/* Closed door */}
         <img
-          src="/assets/closed.png"
+          src="/assets/closed.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ opacity: getClosedOpacity() }}
@@ -89,7 +89,7 @@ function DoorOverlay({ scrollProgress }) {
 
         {/* Semi-open door */}
         <img
-          src="/assets/semi-open.png"
+          src="/assets/semi-open.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ opacity: getSemiOpenOpacity() }}
@@ -98,7 +98,7 @@ function DoorOverlay({ scrollProgress }) {
 
         {/* Fully open door */}
         <img
-          src="/assets/open.png"
+          src="/assets/open.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{

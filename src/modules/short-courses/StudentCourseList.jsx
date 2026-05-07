@@ -73,16 +73,13 @@ export function StudentCourseList({ onSelectCourse }) {
               <Icon name="school" className="text-[14px] sm:text-[16px]" />
               Specialized Learning
             </div>
-            <h1 className="font-serif text-2xl sm:text-4xl lg:text-headline-xl text-primary leading-tight">Short Courses for the Modern Soul</h1>
+            <h1 className="font-serif text-2xl sm:text-4xl lg:text-headline-xl text-primary leading-tight">Short Courses </h1>
             <p className="text-sm sm:text-body-lg text-slate-600 max-w-2xl mx-auto lg:mx-0">
               Deepen your understanding of Islamic sciences through our curated, short-term modules.
             </p>
           </div>
           <div className="hidden lg:block w-1/3 aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl relative border-4 border-white bg-primary flex-shrink-0">
-            <div className="absolute inset-0 pattern-overlay opacity-30" />
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-800 to-primary-600 flex items-center justify-center">
-              <Icon name="school" className="text-white/20 text-[120px]" />
-            </div>
+           <img src="/assets/short-courses.png" alt="Short Courses" className="absolute inset-0 w-full h-full object-cover opacity-100" />
           </div>
         </div>
       </section>

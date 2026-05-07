@@ -73,9 +73,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">☪️</div>
+          <img src="/assets/LOGO_HIDAYAT.png" alt="HIDAYAT" className="w-16 h-16 mx-auto mb-3 object-contain" />
           <h1 className="text-3xl font-bold text-primary">Hidayat</h1>
-          <p className="text-gray-500 text-sm mt-1">Learning Management System</p>
+          <p className="text-gray-500 text-sm mt-1">Learning Today, Leading Tomorrow</p>
         </div>
 
         {/* Card */}

@@ -21,23 +21,32 @@ export function FeatureFlagProvider({ children }) {
   const [flags, setFlags] = useState(defaultFlags)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Initial fetch
-    supabase
+  const fetchFlags = async () => {
+    setLoading(true)
+    const { data } = await supabase
       .from('feature_flags')
       .select('module, enabled')
-      .then(({ data }) => {
-        if (data) {
-          const mapped = data.reduce((acc, row) => {
-            acc[row.module] = row.enabled
-            return acc
-          }, {})
-          setFlags((prev) => ({ ...prev, ...mapped }))
-        }
-        setLoading(false)
-      })
 
-    // Realtime subscription for live updates (within 60 seconds per Req 3.3)
+    if (data) {
+      const mapped = data.reduce((acc, row) => {
+        acc[row.module] = row.enabled
+        return acc
+      }, {})
+      setFlags((prev) => ({ ...prev, ...mapped }))
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    // Initial fetch
+    fetchFlags()
+
+    // Re-fetch when auth state changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      fetchFlags()
+    })
+
+    // Realtime subscription for live updates
     const channel = supabase
       .channel('feature_flags_changes')
       .on(
@@ -56,6 +65,7 @@ export function FeatureFlagProvider({ children }) {
       .subscribe()
 
     return () => {
+      subscription.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [])

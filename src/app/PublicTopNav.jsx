@@ -62,6 +62,7 @@ export default function PublicTopNav() {
     { label: 'Short Courses',  href: '/short-courses',   protected: true },
     { label: 'Darul Ifta',     href: '/darul-ifta',      protected: false },
     { label: 'Research Center', href: '/research-center', protected: false },
+    { label: 'Articles',       href: '/articles',        protected: false },
   ]
 
   const handleLinkClick = (e, link) => {
@@ -89,7 +90,7 @@ export default function PublicTopNav() {
       <nav className="fixed top-0 w-full z-50 border-b border-outline bg-background/95 backdrop-blur-md">
         <div className="flex justify-between items-center w-full px-4 sm:px-8 py-3 sm:py-4 max-w-7xl mx-auto">
           <a href="/" onClick={(e) => { e.preventDefault(); navigate('/') }} className="flex items-center">
-            <Logo size="md" />
+            <Logo size="lg" />
           </a>
 
           {/* Desktop nav */}

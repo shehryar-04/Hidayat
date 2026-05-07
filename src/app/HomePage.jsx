@@ -8,7 +8,7 @@ function Icon({ name, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{name}</span>
 }
 
-// ─── Door Opening Overlay ────────────────────────────────────
+// ─── Door Opening Overlay ────
 // This sits ON TOP of the entire page. As user scrolls, doors open
 // and the overlay fades away revealing the website beneath.
 function DoorOverlay({ scrollProgress }) {
@@ -111,11 +111,11 @@ function DoorOverlay({ scrollProgress }) {
 
       {/* Scroll indicator */}
       <div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60"
+        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 text-white/70"
         style={{ opacity: scrollProgress < 0.08 ? 1 - scrollProgress * 12 : 0 }}
       >
-        <span className="text-sm font-serif tracking-wider">Scroll to Enter</span>
-        <svg className="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <span className="text-xl font-serif tracking-widest">Scroll to Enter</span>
+        <svg className="w-8 h-8 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>
@@ -129,66 +129,94 @@ function Hero() {
   const { role } = useRole()
   return (
     <section className="relative min-h-[50vh] lg:min-h-[600px] flex items-center overflow-hidden bg-white pt-2 sm:pt-4">
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-        <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-secondary/30 via-transparent to-transparent" />
+
+  {/* LEFT HALF LOGO WATERMARK */}
+  <div className="absolute top-[15%] left-0 h-[80%] w-[45%] overflow-hidden pointer-events-none z-0">
+    <img
+      src="/assets/LOGO_HIDAYAT.png"
+      alt="Hidayat Logo"
+      className="h-full w-auto object-contain opacity-[0.25] scale-[1.5] -translate-x-[15%]"
+    />
+  </div>
+
+  {/* BACKGROUND RADIAL EFFECT */}
+  <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+    <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-secondary/30 via-transparent to-transparent" />
+  </div>
+
+  <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10 py-12 lg:py-0">
+
+    {/* LEFT CONTENT */}
+    <div className="lg:col-span-6 space-y-5 sm:space-y-6 text-center lg:text-left">
+      <div className="inline-flex items-center space-x-2 bg-secondary/10 text-primary px-3 sm:px-4 py-1 rounded-full border border-secondary/20">
+        <Icon name="menu_book" className="text-[16px] sm:text-[18px]" />
+        <span className="text-[10px] sm:text-label-sm font-bold tracking-wider">
+          ENROLLMENT OPEN 2024
+        </span>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10 py-12 lg:py-0">
-        <div className="lg:col-span-6 space-y-5 sm:space-y-6 text-center lg:text-left">
-          <div className="inline-flex items-center space-x-2 bg-secondary/10 text-primary px-3 sm:px-4 py-1 rounded-full border border-secondary/20">
-            <Icon name="menu_book" className="text-[16px] sm:text-[18px]" />
-            <span className="text-[10px] sm:text-label-sm font-bold tracking-wider">ENROLLMENT OPEN 2024</span>
-          </div>
-          <h1 className="font-serif text-3xl sm:text-4xl lg:text-headline-xl text-primary leading-tight">
-            Cultivating Spiritual Clarity & <span className="text-secondary italic">Scholarly Excellence</span>
-          </h1>
-          <p className="text-base sm:text-body-lg text-slate-500 max-w-xl mx-auto lg:mx-0">
-            A modern sanctuary for traditional Islamic sciences. Bridging authentic heritage with contemporary intellectual rigor for seekers of truth worldwide.
-          </p>
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2 sm:pt-4 justify-center lg:justify-start">
-            <button onClick={() => navigate(role ? '/short-courses' : '/login')}
-              className="bg-primary text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-label-lg flex items-center justify-center space-x-3 shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all">
-              <span>Explore Courses</span>
-              <Icon name="arrow_forward" />
-            </button>
-            <button onClick={() => navigate('/darul-ifta')}
-              className="border-2 border-secondary text-secondary px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-label-lg flex items-center justify-center space-x-3 hover:bg-secondary/10 transition-all">
-              <span>Darul Ifta</span>
-            </button>
+
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-headline-xl text-primary leading-tight">
+        Cultivating Spiritual Clarity &{" "}
+        <span className="text-secondary italic">Scholarly Excellence</span>
+      </h1>
+
+      <p className="text-base sm:text-body-lg text-slate-500 max-w-xl mx-auto lg:mx-0">
+        A modern sanctuary for traditional Islamic sciences. Bridging authentic
+        heritage with contemporary intellectual rigor for seekers of truth worldwide.
+      </p>
+
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2 sm:pt-4 justify-center lg:justify-start">
+        <button
+          onClick={() => navigate(role ? "/short-courses" : "/login")}
+          className="bg-primary text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-label-lg flex items-center justify-center space-x-3 shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all"
+        >
+          <span>Explore Courses</span>
+          <Icon name="arrow_forward" />
+        </button>
+
+        <button
+          onClick={() => navigate("/darul-ifta")}
+          className="border-2 border-secondary text-secondary px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-label-lg flex items-center justify-center space-x-3 hover:bg-secondary/10 transition-all"
+        >
+          <span>Darul Ifta</span>
+        </button>
+      </div>
+    </div>
+
+    {/* RIGHT DECORATIVE CARD */}
+    <div className="hidden lg:block lg:col-span-6 relative">
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-outline bg-primary aspect-[4/3]">
+
+        <img
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVyIumR3cEwDm2nAkUwl9GiaqyYdFPZXH5ngcwRNI3P6DwEPdNH8dVXFIc1atFf9dKXuEDggXaSAU5fPhDMJcA7Amr4_QoAD6GD5ye3R8Y3_KM9Ec2T_kG-niClN5__EKORM8wMF15m9R_7ZviZPVLMonZOzHeMD1Jls1QqxTE2DKm519SRQxcEX7iJpuGVIpoZkifTUESDQYPTh5UxJThKoMjiQu9yCl5Nowa9kUYqaugENuMeFvgGeuj628lf9kh37ddmuOLIng"
+          alt="Islamic scholarship"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => { e.target.style.display = "none"; }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/70 to-primary/10" />
+
+        <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+              <Icon name="history_edu" className="text-white" />
+            </div>
+            <div>
+              <p className="font-serif text-white text-lg font-semibold">
+                Traditional Wisdom
+              </p>
+              <p className="text-label-sm text-white/80">
+                Reviving the legacy of Islamic scholarship
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right decorative card — hidden on mobile */}
-        <div className="hidden lg:block lg:col-span-6 relative">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-outline bg-primary aspect-[4/3]">
-            {/* Background image placeholder — replace src with your actual image */}
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVyIumR3cEwDm2nAkUwl9GiaqyYdFPZXH5ngcwRNI3P6DwEPdNH8dVXFIc1atFf9dKXuEDggXaSAU5fPhDMJcA7Amr4_QoAD6GD5ye3R8Y3_KM9Ec2T_kG-niClN5__EKORM8wMF15m9R_7ZviZPVLMonZOzHeMD1Jls1QqxTE2DKm519SRQxcEX7iJpuGVIpoZkifTUESDQYPTh5UxJThKoMjiQu9yCl5Nowa9kUYqaugENuMeFvgGeuj628lf9kh37ddmuOLIng"
-              alt="Islamic scholarship"
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => { e.target.style.display = 'none' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/70 to-primary/10" />
-            <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                  <Icon name="history_edu" className="text-white" />
-                </div>
-                <div>
-                  <p className="font-serif text-white text-lg font-semibold">Traditional Wisdom</p>
-                  <p className="text-label-sm text-white/80">Reviving the legacy of Islamic scholarship</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-secondary/10 rounded-full flex items-center justify-center p-8 border border-secondary/30">
-            <div className="text-center">
-              <Icon name="token" className="text-secondary text-6xl" />
-              <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em] mt-2">Ihsan</p>
-            </div>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
+
+  </div>
+</section>
   )
 }
 
@@ -407,6 +435,7 @@ function Footer() {
 
 // ─── Page Assembly ───────────────────────────────────────────
 export default function HomePage() {
+  const { role } = useRole()
   const [scrollProgress, setScrollProgress] = useState(0)
   const [animationDone, setAnimationDone] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -419,6 +448,13 @@ export default function HomePage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Skip animation if already seen this session or user is logged in
+  useEffect(() => {
+    if (sessionStorage.getItem('doorAnimationSeen') || role) {
+      setAnimationDone(true)
+    }
+  }, [role])
 
   useEffect(() => {
     if (isMobile || animationDone) return // Skip on mobile
@@ -457,6 +493,7 @@ export default function HomePage() {
   // Once animation is done, scroll to top and show normal page
   useEffect(() => {
     if (animationDone) {
+      sessionStorage.setItem('doorAnimationSeen', 'true')
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
   }, [animationDone])

@@ -441,9 +441,13 @@ export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false)
   const scrollSectionRef = useRef(null)
 
-  // Detect mobile — skip animation entirely on small screens
+  // Detect mobile — skip animation on touch devices or small screens
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    const checkMobile = () => {
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+      const isNarrow = window.innerWidth < 1024
+      setIsMobile(isTouch || isNarrow)
+    }
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)

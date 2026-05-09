@@ -12,33 +12,39 @@ export function RoleProvider({ children }) {
   const [role, setRole] = useState(null)
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
     // Load role from current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        loadRole(session.user.id)
+        loadRole(session.user.id, true)
       } else {
         setLoading(false)
+        setInitialized(true)
       }
     })
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadRole(session.user.id)
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
         setRole(null)
         setUserId(null)
         setLoading(false)
+        return
+      }
+      if (session?.user) {
+        // On token refresh or re-auth, reload role silently (no loading state)
+        // This prevents the entire app from unmounting/remounting
+        loadRole(session.user.id, !initialized)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  async function loadRole(uid) {
-    setLoading(true)
+  async function loadRole(uid, showLoading = false) {
+    if (showLoading) setLoading(true)
     const { data } = await supabase
       .from('profiles')
       .select('role')
@@ -47,6 +53,7 @@ export function RoleProvider({ children }) {
     setRole(data?.role ?? null)
     setUserId(uid)
     setLoading(false)
+    setInitialized(true)
   }
 
   async function signOut() {

@@ -8,12 +8,14 @@ import { useFeatureFlags } from './FeatureFlagProvider'
 export default function FeatureFlagGuard({ children, flagKey }) {
   const { flags, loading } = useFeatureFlags()
 
-  if (loading) {
+  // Only block on initial load. Once flags are loaded, keep showing content
+  // even during background refetches to prevent unmounting.
+  if (loading && !flags[flagKey] && flags[flagKey] === undefined) {
     return <div>Loading...</div>
   }
 
   // If the flag is disabled, redirect to dashboard
-  if (!flags[flagKey]) {
+  if (!loading && !flags[flagKey]) {
     return <Navigate to="/" replace />
   }
 

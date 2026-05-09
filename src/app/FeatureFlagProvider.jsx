@@ -20,9 +20,10 @@ const FeatureFlagContext = createContext({
 export function FeatureFlagProvider({ children }) {
   const [flags, setFlags] = useState(defaultFlags)
   const [loading, setLoading] = useState(true)
+  const initializedRef = { current: false }
 
-  const fetchFlags = async () => {
-    setLoading(true)
+  const fetchFlags = async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     const { data } = await supabase
       .from('feature_flags')
       .select('module, enabled')
@@ -35,15 +36,19 @@ export function FeatureFlagProvider({ children }) {
       setFlags((prev) => ({ ...prev, ...mapped }))
     }
     setLoading(false)
+    initializedRef.current = true
   }
 
   useEffect(() => {
-    // Initial fetch
-    fetchFlags()
+    // Initial fetch — show loading only the first time
+    fetchFlags(true)
 
-    // Re-fetch when auth state changes (login/logout)
+    // Re-fetch when auth state changes (login/logout) — silently
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      fetchFlags()
+      // Only refetch silently after initial load
+      if (initializedRef.current) {
+        fetchFlags(false)
+      }
     })
 
     // Realtime subscription for live updates
